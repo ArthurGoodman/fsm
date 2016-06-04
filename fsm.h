@@ -22,6 +22,7 @@ class fsm::Fsm {
 
 public:
     Fsm(const std::vector<S> &q, const std::vector<char> &a);
+    Fsm(const std::vector<S> &q, const std::vector<char> &a, std::set<int> s, std::set<int> f);
     Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::set<int>>> &t);
     Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::set<int>>> &t, std::set<int> s, std::set<int> f);
 
@@ -34,11 +35,19 @@ public:
     Fsm rev() const;
     Fsm det() const;
     Fsm min() const;
+
+private:
+    void printState(int state) const;
 };
 
 template <class S>
 fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a)
     : q(q), a(a), t(a.size(), q.size()) {
+}
+
+template <class S>
+fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a, std::set<int> s, std::set<int> f)
+    : q(q), a(a), t(a.size(), q.size()), s(s), f(f) {
 }
 
 template <class S>
@@ -68,15 +77,26 @@ void fsm::Fsm<S>::finish(int state) {
 
 template <class S>
 void fsm::Fsm<S>::inspect() const {
-    for (unsigned int s1 = 0; s1 < q.size(); s1++)
-        for (unsigned int c = 0; c < a.size(); c++)
-            for (int s2 : t.at(s1, c))
-                std::cout << (s.find(s1) != s.end() ? "* " : "  ") << q[s1] << " --" << a[c] << "-> " << q[s2] << (f.find(s2) != f.end() ? " *\n" : "\n");
+    for (unsigned s1 = 0; s1 < q.size(); s1++)
+        for (unsigned c = 0; c < a.size(); c++)
+            for (int s2 : t.at(s1, c)) {
+                printState(s1);
+                std::cout << " --" << a[c] << "-> ";
+                printState(s2);
+                std::cout << "\n";
+            }
 }
 
 template <class S>
 fsm::Fsm<S> fsm::Fsm<S>::rev() const {
-    return *this;
+    Fsm<S> rfsm(q, a, f, s);
+
+    for (unsigned s1 = 0; s1 < q.size(); s1++)
+        for (unsigned c = 0; c < a.size(); c++)
+            for (int s2 : t.at(s1, c))
+                rfsm.connect(s2, s1, a[c]);
+
+    return rfsm;
 }
 
 template <class S>
@@ -87,4 +107,9 @@ fsm::Fsm<S> fsm::Fsm<S>::det() const {
 template <class S>
 fsm::Fsm<S> fsm::Fsm<S>::min() const {
     return rev().det().rev().det();
+}
+
+template <class S>
+void fsm::Fsm<S>::printState(int state) const {
+    std::cout << (s.find(state) != s.end() ? "*" : " ") << q[state] << (f.find(state) != f.end() ? "*" : " ");
 }
