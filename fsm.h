@@ -27,6 +27,7 @@ public:
     Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::set<int>>> &t, std::set<int> s, std::set<int> f);
 
     void connect(int s1, int s2, char c);
+    void connect(int s1, int s2, int c);
     void start(int s);
     void finish(int s);
 
@@ -66,6 +67,11 @@ void fsm::Fsm<S>::connect(int s1, int s2, char c) {
 }
 
 template <class S>
+void fsm::Fsm<S>::connect(int s1, int s2, int c) {
+    t[s1][c].insert(s2);
+}
+
+template <class S>
 void fsm::Fsm<S>::start(int state) {
     s.insert(state);
 }
@@ -77,8 +83,8 @@ void fsm::Fsm<S>::finish(int state) {
 
 template <class S>
 void fsm::Fsm<S>::inspect() const {
-    for (unsigned s1 = 0; s1 < q.size(); s1++)
-        for (unsigned c = 0; c < a.size(); c++)
+    for (int s1 = 0; s1 < (int)q.size(); s1++)
+        for (int c = 0; c < (int)a.size(); c++)
             for (int s2 : t.at(s1, c)) {
                 printState(s1);
                 std::cout << " --" << a[c] << "-> ";
@@ -91,10 +97,10 @@ template <class S>
 fsm::Fsm<S> fsm::Fsm<S>::rev() const {
     Fsm<S> rfsm(q, a, f, s);
 
-    for (unsigned s1 = 0; s1 < q.size(); s1++)
-        for (unsigned c = 0; c < a.size(); c++)
+    for (int s1 = 0; s1 < (int)q.size(); s1++)
+        for (int c = 0; c < (int)a.size(); c++)
             for (int s2 : t.at(s1, c))
-                rfsm.connect(s2, s1, a[c]);
+                rfsm.connect(s2, s1, (int)c);
 
     return rfsm;
 }
