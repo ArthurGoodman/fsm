@@ -43,6 +43,8 @@ public:
 private:
     void printState(int state) const;
     std::vector<std::set<int>> closure(std::vector<std::set<int>> &q, int state) const;
+    std::vector<std::set<int>> computeEpsilonClosures() const;
+    void computeEpsilonClosures(int state, std::vector<std::set<int>> &epsilonClosures, std::vector<bool> &flags) const;
 };
 
 template <class S>
@@ -101,7 +103,7 @@ void fsm::Fsm<S>::inspect() const {
         for (int c = 0; c < (int)alphabet.size(); c++)
             for (int s2 : transitions.at(s1, c)) {
                 printState(s1);
-                std::cout << " --" << alphabet[c] << "-> ";
+                std::wcout << " --" << (alphabet[c] == '\0' ? '-' : alphabet[c]) << "-> ";
                 printState(s2);
                 std::cout << "\n";
             }
@@ -183,4 +185,31 @@ std::vector<std::set<int>> fsm::Fsm<S>::closure(std::vector<std::set<int>> &q, i
     }
 
     return t;
+}
+
+template <class S>
+std::vector<std::set<int>> fsm::Fsm<S>::computeEpsilonClosures() const {
+    std::vector<std::set<int>> epsilonClosures(states.size());
+    std::vector<bool> flags(states.size(), false);
+
+    for (int i = 0; i < (int)epsilonClosures.size(); i++)
+        epsilonClosures[i].insert(i);
+
+    for (int s = 0; s < (int)states.size(); s++)
+        computeEpsilonClosures(s, epsilonClosures, flags);
+
+    return epsilonClosures;
+}
+
+template <class S>
+void fsm::Fsm<S>::computeEpsilonClosures(int state, std::vector<std::set<int>> &epsilonClosures, std::vector<bool> &flags) const {
+    if (flags[state])
+        return;
+
+    flags[state] = true;
+
+    for (int s : transitions.at(state, alphabet.size() - 1)) {
+        epsilonClosures[state].insert(s);
+        computeEpsilonClosures(s, epsilonClosures, flags);
+    }
 }

@@ -8,3 +8,5 @@ SOURCES += main.cpp
 HEADERS += \
     fsm.h \
     matrix.h
+
+QMAKE_CXXFLAGS += -MD
