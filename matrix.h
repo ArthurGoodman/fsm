@@ -14,15 +14,15 @@ public:
     Matrix(const Matrix &m);
     Matrix(Matrix &&m);
 
-    Matrix(const std::vector<std::vector<T>> &v);
+    Matrix(const std::vector<std::vector<T>> &m);
 
     ~Matrix();
 
     Matrix &operator=(const Matrix &m);
     Matrix &operator=(Matrix &&m);
 
-    int width();
-    int height();
+    int width() const;
+    int height() const;
 
     T at(int i, int j) const;
 
@@ -50,15 +50,15 @@ Matrix<T>::Matrix(const Matrix &m)
 }
 
 template <class T>
-Matrix<T>::Matrix(const std::vector<std::vector<T>> &v) {
-    w = v[0].size();
-    h = v.size();
+Matrix<T>::Matrix(const std::vector<std::vector<T>> &m) {
+    w = m[0].size();
+    h = m.size();
 
     data = new T[w * h];
 
     for (int i = 0; i < h; i++)
         for (int j = 0; j < w; j++)
-            (*this)[i][j] = v[i][j];
+            (*this)[i][j] = m[i][j];
 }
 
 template <class T>
@@ -106,12 +106,12 @@ Matrix<T> &Matrix<T>::operator=(Matrix<T> &&m) {
 }
 
 template <class T>
-int Matrix<T>::width() {
+int Matrix<T>::width() const {
     return w;
 }
 
 template <class T>
-int Matrix<T>::height() {
+int Matrix<T>::height() const {
     return h;
 }
 
