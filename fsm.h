@@ -16,15 +16,15 @@ template <class S>
 class fsm::Fsm {
     std::vector<S> states;
     std::vector<char> alphabet;
-    Matrix<std::set<int>> transitions;
+    Matrix<std::vector<int>> transitions;
     std::set<int> startingStates;
     std::set<int> finalStates;
 
 public:
     Fsm(const std::vector<S> &q, const std::vector<char> &a);
     Fsm(const std::vector<S> &q, const std::vector<char> &a, std::set<int> s, std::set<int> f);
-    Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::set<int>>> &t);
-    Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::set<int>>> &t, std::set<int> s, std::set<int> f);
+    Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t);
+    Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t, std::set<int> s, std::set<int> f);
 
     Fsm(const Fsm<S> &fsm);
     Fsm(Fsm<S> &&fsm);
@@ -57,12 +57,12 @@ fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a, std::set<i
 }
 
 template <class S>
-fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::set<int>>> &t)
+fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t)
     : states(q), alphabet(a), transitions(t) {
 }
 
 template <class S>
-fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::set<int>>> &t, std::set<int> s, std::set<int> f)
+fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t, std::set<int> s, std::set<int> f)
     : states(q), alphabet(a), transitions(t), startingStates(s), finalStates(f) {
 }
 
@@ -78,12 +78,12 @@ fsm::Fsm<S>::Fsm(Fsm<S> &&fsm)
 
 template <class S>
 void fsm::Fsm<S>::connect(int s1, int s2, char a) {
-    transitions[s1][a == '\0' ? alphabet.size() : std::find(alphabet.begin(), alphabet.end(), a) - alphabet.begin()].insert(s2);
+    transitions[s1][a == '\0' ? alphabet.size() : std::find(alphabet.begin(), alphabet.end(), a) - alphabet.begin()].push_back(s2);
 }
 
 template <class S>
 void fsm::Fsm<S>::connect(int s1, int s2, int a) {
-    transitions[s1][a].insert(s2);
+    transitions[s1][a].push_back(s2);
 }
 
 template <class S>
@@ -139,10 +139,10 @@ fsm::Fsm<S> fsm::Fsm<S>::det() const {
 
     q.push_back(q0);
 
-    std::vector<std::vector<std::set<int>>> t;
+    std::vector<std::vector<std::vector<int>>> t;
 
     while (t.size() < q.size()) {
-        std::vector<std::set<int>> row;
+        std::vector<std::vector<int>> row;
 
         for (int a = 0; a < (int)alphabet.size(); a++) {
             std::set<int> ts;
