@@ -5,8 +5,6 @@
 #include <algorithm>
 #include <iostream>
 
-#include "matrix.h"
-
 namespace fsm {
 template <class>
 class Fsm;
@@ -16,7 +14,7 @@ template <class S>
 class fsm::Fsm {
     std::vector<S> states;
     std::vector<char> alphabet;
-    Matrix<std::vector<int>> transitions;
+    std::vector<std::vector<std::vector<int>>> transitions;
     std::set<int> startingStates;
     std::set<int> finalStates;
 
@@ -48,12 +46,16 @@ private:
 
 template <class S>
 fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a)
-    : states(q), alphabet(a), transitions(a.size() + 1, q.size()) {
+    : states(q), alphabet(a), transitions(q.size()) {
+    for (std::vector<std::vector<int>> &t : transitions)
+        t.resize(a.size() + 1);
 }
 
 template <class S>
 fsm::Fsm<S>::Fsm(const std::vector<S> &q, const std::vector<char> &a, std::set<int> s, std::set<int> f)
-    : states(q), alphabet(a), transitions(a.size() + 1, q.size()), startingStates(s), finalStates(f) {
+    : states(q), alphabet(a), transitions(q.size()), startingStates(s), finalStates(f) {
+    for (std::vector<std::vector<int>> &t : transitions)
+        t.resize(a.size() + 1);
 }
 
 template <class S>
@@ -100,7 +102,7 @@ template <class S>
 void fsm::Fsm<S>::inspect() const {
     for (int s1 = 0; s1 < (int)states.size(); s1++)
         for (int c = 0; c < (int)alphabet.size() + 1; c++)
-            for (int s2 : transitions.at(s1, c)) {
+            for (int s2 : transitions[s1][c]) {
                 printState(s1);
 
                 if (c == (int)alphabet.size())
@@ -120,7 +122,7 @@ fsm::Fsm<S> fsm::Fsm<S>::rev() const {
 
     for (int s1 = 0; s1 < (int)states.size(); s1++)
         for (int a = 0; a < (int)alphabet.size() + 1; a++)
-            for (int s2 : transitions.at(s1, a))
+            for (int s2 : transitions[s1][a])
                 rfsm.connect(s2, s1, a);
 
     return rfsm;
@@ -128,7 +130,7 @@ fsm::Fsm<S> fsm::Fsm<S>::rev() const {
 
 template <class S>
 fsm::Fsm<S> fsm::Fsm<S>::det() const {
-    std::vector<std::set<int>> ec = epsilonClosures();
+    const std::vector<std::set<int>> &ec = epsilonClosures();
 
     std::vector<std::set<int>> q;
 
@@ -148,7 +150,7 @@ fsm::Fsm<S> fsm::Fsm<S>::det() const {
             std::set<int> ts;
 
             for (int i : q[t.size()])
-                for (int s : transitions.at(i, a))
+                for (int s : transitions[i][a])
                     ts.insert(ec[s].begin(), ec[s].end());
 
             if (ts.empty()) {
@@ -218,7 +220,7 @@ void fsm::Fsm<S>::epsilonClosure(int state, std::vector<std::set<int>> &ec, std:
 
     flags[state] = true;
 
-    for (int s : transitions.at(state, alphabet.size())) {
+    for (int s : transitions[state][alphabet.size()]) {
         ec[state].insert(s);
         epsilonClosure(s, ec, flags);
     }

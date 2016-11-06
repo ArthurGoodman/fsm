@@ -6,7 +6,6 @@ CONFIG -= qt
 SOURCES += main.cpp
 
 HEADERS += \
-    fsm.h \
-    matrix.h
+    fsm.h
 
 QMAKE_CXXFLAGS += -MD
