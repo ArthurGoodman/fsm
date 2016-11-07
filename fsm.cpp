@@ -1,31 +1,31 @@
 #include "fsm.h"
 
-fsm::Fsm::Fsm(const std::vector<int> &q, const std::vector<char> &a)
-    : marks(q), alphabet(a), transitions(q.size()) {
+fsm::Fsm::Fsm(int states, const std::vector<char> &a)
+    : alphabet(a), transitions(states) {
     for (std::vector<std::vector<int>> &t : transitions)
         t.resize(a.size() + 1);
 }
 
-fsm::Fsm::Fsm(const std::vector<int> &q, const std::vector<char> &a, std::set<int> s, std::set<int> f)
-    : marks(q), alphabet(a), transitions(q.size()), startingStates(s), finalStates(f) {
+fsm::Fsm::Fsm(int states, const std::vector<char> &a, std::set<int> s, std::set<int> f)
+    : alphabet(a), transitions(states), startingStates(s), finalStates(f) {
     for (std::vector<std::vector<int>> &t : transitions)
         t.resize(a.size() + 1);
 }
 
-fsm::Fsm::Fsm(const std::vector<int> &q, const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t)
-    : marks(q), alphabet(a), transitions(t) {
+fsm::Fsm::Fsm(const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t)
+    : alphabet(a), transitions(t) {
 }
 
-fsm::Fsm::Fsm(const std::vector<int> &q, const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t, std::set<int> s, std::set<int> f)
-    : marks(q), alphabet(a), transitions(t), startingStates(s), finalStates(f) {
+fsm::Fsm::Fsm(const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t, std::set<int> s, std::set<int> f)
+    : alphabet(a), transitions(t), startingStates(s), finalStates(f) {
 }
 
 fsm::Fsm::Fsm(const Fsm &fsm)
-    : marks(fsm.marks), alphabet(fsm.alphabet), transitions(fsm.transitions), startingStates(fsm.startingStates), finalStates(fsm.finalStates) {
+    : alphabet(fsm.alphabet), transitions(fsm.transitions), startingStates(fsm.startingStates), finalStates(fsm.finalStates) {
 }
 
 fsm::Fsm::Fsm(Fsm &&fsm)
-    : marks(std::move(fsm.marks)), alphabet(std::move(fsm.alphabet)), transitions(std::move(fsm.transitions)), startingStates(std::move(fsm.startingStates)), finalStates(std::move(fsm.finalStates)) {
+    : alphabet(std::move(fsm.alphabet)), transitions(std::move(fsm.transitions)), startingStates(std::move(fsm.startingStates)), finalStates(std::move(fsm.finalStates)) {
 }
 
 void fsm::Fsm::connect(int s1, int s2, char a) {
@@ -62,7 +62,7 @@ void fsm::Fsm::inspect() const {
 }
 
 fsm::Fsm fsm::Fsm::rev() const {
-    Fsm rfsm(marks, alphabet, finalStates, startingStates);
+    Fsm rfsm(transitions.size(), alphabet, finalStates, startingStates);
 
     for (int s1 = 0; s1 < (int)transitions.size(); s1++)
         for (int a = 0; a < (int)alphabet.size() + 1; a++)
@@ -119,17 +119,6 @@ fsm::Fsm fsm::Fsm::det() const {
         t.push_back(row);
     }
 
-    std::vector<int> m(q.size());
-
-    for (int i = 0; i < (int)q.size(); i++) {
-        std::set<int> temp;
-
-        for (int s : q[i])
-            temp.insert(marks[s]);
-
-        m[i] = *temp.begin();
-    }
-
     std::set<int> f;
 
     for (int i = 0; i < (int)q.size(); i++)
@@ -137,7 +126,7 @@ fsm::Fsm fsm::Fsm::det() const {
             if (finalStates.find(s) != finalStates.end())
                 f.insert(i);
 
-    return Fsm(m, alphabet, t, {0}, f);
+    return Fsm(alphabet, t, {0}, f);
 }
 
 fsm::Fsm fsm::Fsm::min() const {
@@ -145,7 +134,7 @@ fsm::Fsm fsm::Fsm::min() const {
 }
 
 void fsm::Fsm::printState(int state) const {
-    std::cout << (startingStates.find(state) != startingStates.end() ? "*" : " ") << state << "(" << marks[state] << ")" << (finalStates.find(state) != finalStates.end() ? "*" : " ");
+    std::cout << (startingStates.find(state) != startingStates.end() ? "*" : " ") << state << (finalStates.find(state) != finalStates.end() ? "*" : " ");
 }
 
 std::vector<std::set<int>> fsm::Fsm::epsilonClosures() const {

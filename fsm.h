@@ -10,17 +10,16 @@ class Fsm;
 }
 
 class fsm::Fsm {
-    std::vector<int> marks;
     std::vector<char> alphabet;
     std::vector<std::vector<std::vector<int>>> transitions;
     std::set<int> startingStates;
     std::set<int> finalStates;
 
 public:
-    Fsm(const std::vector<int> &q, const std::vector<char> &a);
-    Fsm(const std::vector<int> &q, const std::vector<char> &a, std::set<int> s, std::set<int> f);
-    Fsm(const std::vector<int> &q, const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t);
-    Fsm(const std::vector<int> &q, const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t, std::set<int> s, std::set<int> f);
+    Fsm(int states, const std::vector<char> &a);
+    Fsm(int states, const std::vector<char> &a, std::set<int> s, std::set<int> f);
+    Fsm(const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t);
+    Fsm(const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t, std::set<int> s, std::set<int> f);
 
     Fsm(const Fsm &fsm);
     Fsm(Fsm &&fsm);
