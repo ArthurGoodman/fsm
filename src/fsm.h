@@ -1,15 +1,13 @@
 #pragma once
 
-#include <vector>
-#include <set>
 #include <algorithm>
 #include <iostream>
+#include <set>
+#include <vector>
 
 namespace fsm {
-class Fsm;
-}
 
-class fsm::Fsm {
+class Fsm {
     std::vector<char> alphabet;
     std::vector<std::vector<std::vector<int>>> transitions;
     std::set<int> startingStates;
@@ -19,10 +17,11 @@ public:
     Fsm(int states, const std::vector<char> &a);
     Fsm(int states, const std::vector<char> &a, std::set<int> s, std::set<int> f);
     Fsm(const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t);
-    Fsm(const std::vector<char> &a, const std::vector<std::vector<std::vector<int>>> &t, std::set<int> s, std::set<int> f);
 
-    Fsm(const Fsm &fsm);
-    Fsm(Fsm &&fsm);
+    Fsm(const std::vector<char> &a,
+        const std::vector<std::vector<std::vector<int>>> &t,
+        std::set<int> s,
+        std::set<int> f);
 
     void connect(int s1, int s2, char a);
     void connect(int s1, int s2, int a);
@@ -40,3 +39,5 @@ private:
     std::vector<std::set<int>> epsilonClosures() const;
     void epsilonClosure(int state, std::vector<std::set<int>> &ec, std::vector<bool> &flags) const;
 };
+
+} // namespace fsm
