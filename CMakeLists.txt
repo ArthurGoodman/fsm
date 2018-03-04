@@ -28,4 +28,7 @@ set(FSM ${PROJECT_NAME})
 set(FSM_TEST ${PROJECT_NAME}_test)
 
 add_subdirectory(src)
-add_subdirectory(test)
+
+if(FSM_BUILD_TEST)
+    add_subdirectory(test)
+endif()
