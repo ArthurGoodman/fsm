@@ -1,9 +1,10 @@
-file(GLOB_RECURSE SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp
-    )
+file(GLOB_RECURSE FSM_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
+file(GLOB_RECURSE FSM_TEST_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 
-add_executable(${FSM_TEST} ${SOURCES})
+add_executable(${FSM_TEST}
+    ${FSM_TEST_SOURCES}
+    ${FSM_TEST_HEADERS}
+    )
 
 target_link_libraries(${FSM_TEST}
     PRIVATE ${FSM}
