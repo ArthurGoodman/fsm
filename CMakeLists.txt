@@ -25,10 +25,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${FLAGS}")
 ################################################################################
 
 set(FSM ${PROJECT_NAME})
-set(FSM_TEST ${PROJECT_NAME}_test)
 
 add_subdirectory(src)
 
-if(FSM_BUILD_TEST)
+if(BUILD_TESTS)
+    set(FSM_TEST ${PROJECT_NAME}_test)
     add_subdirectory(test)
 endif()
