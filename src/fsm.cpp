@@ -2,89 +2,122 @@
 #include <algorithm>
 #include <cstddef>
 
-namespace fsm {
+#include <iostream>
 
-Fsm::Fsm(std::size_t states, const std::vector<symbol_t> &a)
-    : m_alphabet(a)
-    , m_transitions(states)
-{
-    for (std::vector<std::vector<state_t>> &t : m_transitions)
-    {
-        t.resize(a.size() + 1);
-    }
-}
+namespace fsm {
 
 Fsm::Fsm(
     std::size_t states,
-    const std::vector<symbol_t> &a,
     const std::set<state_t> &s,
     const std::set<state_t> &f)
-    : m_alphabet(a)
-    , m_transitions(states)
+    : m_transitions(states)
     , m_starting_states(s)
     , m_final_states(f)
 {
-    for (std::vector<std::vector<state_t>> &t : m_transitions)
+    for (std::vector<std::set<symbol_t>> &t : m_transitions)
     {
-        t.resize(a.size() + 1);
+        t.resize(states);
     }
 }
 
 Fsm::Fsm(
-    const std::vector<symbol_t> &a,
-    const std::vector<std::vector<std::vector<state_t>>> &t)
-    : m_alphabet(a)
-    , m_transitions(t)
-{
-}
-
-Fsm::Fsm(
-    const std::vector<symbol_t> &a,
-    const std::vector<std::vector<std::vector<state_t>>> &t,
+    const std::vector<std::vector<std::set<symbol_t>>> &t,
     const std::set<state_t> &s,
     const std::set<state_t> &f)
-    : m_alphabet(a)
-    , m_transitions(t)
+    : m_transitions(t)
     , m_starting_states(s)
     , m_final_states(f)
 {
+    buildAlphabet();
+}
+
+Fsm::Fsm(
+    const std::vector<symbol_t> &alphabet,
+    const std::vector<std::vector<std::vector<state_t>>> &t,
+    const std::set<state_t> &s,
+    const std::set<state_t> &f)
+    : m_alphabet(alphabet)
+    , m_transitions(t.size())
+    , m_starting_states(s)
+    , m_final_states(f)
+{
+    for (symbol_t a : alphabet)
+    {
+        m_alphabet_counts[a]++;
+    }
+
+    for (auto &row : m_transitions)
+    {
+        row.resize(t.size());
+    }
+
+    for (state_t s1 = 0; s1 < t.size(); s1++)
+    {
+        for (std::size_t a = 0; a <= alphabet.size(); a++)
+        {
+            for (state_t s2 : t[s1][a])
+            {
+                symbol_t sym = a == alphabet.size() ? '\0' : alphabet[a];
+                connect(s1, s2, sym);
+            }
+        }
+    }
 }
 
 void Fsm::connect(state_t s1, state_t s2, symbol_t a)
 {
-    m_transitions[s1]
-                 [a == '\0'
-                      ? m_alphabet.size()
-                      : std::find(m_alphabet.begin(), m_alphabet.end(), a) -
-                            m_alphabet.begin()]
-                     .push_back(s2);
+    m_transitions[s1][s2].insert(a);
+    m_alphabet_counts[a]++;
+    if (a && m_alphabet_counts[a] == 1)
+    {
+        m_alphabet.emplace_back(a);
+    }
 }
 
-void Fsm::connect(state_t s1, state_t s2, std::size_t a)
+void Fsm::disconnect(state_t s1, state_t s2, symbol_t a)
 {
-    m_transitions[s1][a].push_back(s2);
+    m_transitions[s1][s2].erase(a);
+    m_alphabet_counts[a]--;
+    if (m_alphabet_counts[a] <= 0)
+    {
+        m_alphabet_counts.erase(a);
+        m_alphabet.erase(std::remove(m_alphabet.begin(), m_alphabet.end(), a));
+    }
 }
 
-void Fsm::start(state_t state)
+void Fsm::setStarting(state_t state, bool value)
 {
-    m_starting_states.insert(state);
+    if (value)
+    {
+        m_starting_states.insert(state);
+    }
+    else
+    {
+        m_starting_states.erase(state);
+    }
 }
 
-void Fsm::finish(state_t state)
+void Fsm::setFinal(state_t state, bool value)
 {
-    m_final_states.insert(state);
+    if (value)
+    {
+        m_final_states.insert(state);
+    }
+    else
+    {
+        m_final_states.erase(state);
+    }
 }
 
 Fsm Fsm::rev() const
 {
-    Fsm rfsm(
-        m_transitions.size(), m_alphabet, m_final_states, m_starting_states);
+    Fsm rfsm(m_transitions.size(), m_final_states, m_starting_states);
 
     for (state_t s1 = 0; s1 < m_transitions.size(); s1++)
     {
-        for (state_t a = 0; a < m_alphabet.size() + 1; a++)
+        for (state_t s2 = 0; s2 < m_transitions.size(); s2++)
         {
-            for (state_t s2 : m_transitions[s1][a])
+            for (symbol_t a : m_transitions[s1][s2])
             {
                 rfsm.connect(s2, s1, a);
             }
@@ -121,9 +154,13 @@ Fsm Fsm::det() const
 
             for (state_t i : q[t.size()])
             {
-                for (state_t s : m_transitions[i][a])
+                for (state_t s = 0; s < m_transitions.size(); s++)
                 {
-                    ts.insert(closures[s].begin(), closures[s].end());
+                    if (m_transitions[i][s].find(m_alphabet[a]) !=
+                        m_transitions[i][s].end())
+                    {
+                        ts.insert(closures[s].begin(), closures[s].end());
+                    }
                 }
             }
 
@@ -135,17 +172,16 @@ Fsm Fsm::det() const
 
             state_t index;
 
-            std::vector<std::set<state_t>>::iterator i =
-                std::find(q.begin(), q.end(), ts);
+            const auto &it = std::find(q.begin(), q.end(), ts);
 
-            if (i == q.end())
+            if (it == q.end())
             {
                 index = q.size();
                 q.push_back(ts);
             }
             else
             {
-                index = i - q.begin();
+                index = it - q.begin();
             }
 
             row.push_back({index});
@@ -158,7 +194,7 @@ Fsm Fsm::det() const
 
     std::set<state_t> f;
 
-    for (state_t i = 0; i < q.size(); i++)
+    for (std::size_t i = 0; i < q.size(); i++)
     {
         for (state_t s : q[i])
         {
@@ -181,19 +217,19 @@ std::ostream &operator<<(std::ostream &stream, const Fsm &fsm)
 {
     for (Fsm::state_t s1 = 0; s1 < fsm.m_transitions.size(); s1++)
     {
-        for (std::size_t a = 0; a < fsm.m_alphabet.size() + 1; a++)
+        for (Fsm::state_t s2 = 0; s2 < fsm.m_transitions.size(); s2++)
         {
-            for (Fsm::state_t s2 : fsm.m_transitions[s1][a])
+            for (Fsm::symbol_t a : fsm.m_transitions[s1][s2])
             {
                 fsm.printState(stream, s1);
 
-                if (a == fsm.m_alphabet.size())
+                if (a == '\0')
                 {
                     stream << " --->> ";
                 }
                 else
                 {
-                    stream << " --" << fsm.m_alphabet[a] << "-> ";
+                    stream << " --" << a << "-> ";
                 }
 
                 fsm.printState(stream, s2);
@@ -204,6 +240,27 @@ std::ostream &operator<<(std::ostream &stream, const Fsm &fsm)
     }
 
     return stream;
+}
+
+void Fsm::buildAlphabet()
+{
+    m_alphabet.clear();
+    m_alphabet_counts.clear();
+
+    for (state_t s1 = 0; s1 < m_transitions.size(); s1++)
+    {
+        for (state_t s2 = 0; s2 < m_transitions.size(); s2++)
+        {
+            for (symbol_t a : m_transitions[s1][s2])
+            {
+                m_alphabet_counts[a]++;
+                if (a && m_alphabet_counts[a] == 1)
+                {
+                    m_alphabet.emplace_back(a);
+                }
+            }
+        }
+    }
 }
 
 void Fsm::printState(std::ostream &stream, state_t state) const
@@ -234,9 +291,9 @@ std::vector<std::set<Fsm::state_t>> Fsm::epsilonClosures() const
     std::vector<std::set<state_t>> closures(m_transitions.size());
     std::vector<bool> flags(m_transitions.size(), false);
 
-    for (state_t i = 0; i < closures.size(); i++)
+    for (state_t s = 0; s < m_transitions.size(); s++)
     {
-        closures[i].insert(i);
+        closures[s].insert(s);
     }
 
     for (state_t s = 0; s < m_transitions.size(); s++)
@@ -259,10 +316,13 @@ void Fsm::buildEpsilonClosures(
 
     flags[state] = true;
 
-    for (state_t s : m_transitions[state][m_alphabet.size()])
+    for (state_t s = 0; s < m_transitions.size(); s++)
     {
-        closures[state].insert(s);
-        buildEpsilonClosures(s, closures, flags);
+        if (m_transitions[state][s].find('\0') != m_transitions[state][s].end())
+        {
+            closures[state].insert(s);
+            buildEpsilonClosures(s, closures, flags);
+        }
     }
 }
 
