@@ -109,6 +109,21 @@ void Fsm::setFinal(state_t state, bool value)
     }
 }
 
+std::vector<std::vector<std::set<Fsm::symbol_t>>> Fsm::getTransitions() const
+{
+    return m_transitions;
+}
+
+std::set<Fsm::state_t> Fsm::getStartingStates() const
+{
+    return m_starting_states;
+}
+
+std::set<Fsm::state_t> Fsm::getFinalStates() const
+{
+    return m_final_states;
+}
+
 Fsm Fsm::rev() const
 {
     Fsm rfsm(m_transitions.size(), m_final_states, m_starting_states);

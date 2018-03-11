@@ -32,6 +32,10 @@ public: // methods
     void setStarting(state_t state, bool value = true);
     void setFinal(state_t state, bool value = true);
 
+    std::vector<std::vector<std::set<symbol_t>>> getTransitions() const;
+    std::set<state_t> getStartingStates() const;
+    std::set<state_t> getFinalStates() const;
+
     Fsm rev() const;
     Fsm det() const;
     Fsm min() const;
