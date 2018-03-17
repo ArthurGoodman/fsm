@@ -22,13 +22,12 @@ public: // methods
         const std::set<state_t> &s = {},
         const std::set<state_t> &f = {});
 
-    Fsm(const std::vector<symbol_t> &a,
+    Fsm(const std::set<symbol_t> &a,
         const std::vector<std::vector<std::vector<state_t>>> &t,
         const std::set<state_t> &s = {},
         const std::set<state_t> &f = {});
 
     void connect(state_t s1, state_t s2, symbol_t a);
-    void disconnect(state_t s1, state_t s2, symbol_t a);
     void setStarting(state_t state, bool value = true);
     void setFinal(state_t state, bool value = true);
 
@@ -54,8 +53,7 @@ private: // methods
         std::vector<bool> &flags) const;
 
 private: // fields
-    std::vector<symbol_t> m_alphabet;
-    std::map<symbol_t, std::size_t> m_alphabet_counts;
+    std::set<symbol_t> m_alphabet;
     std::vector<std::vector<std::set<symbol_t>>> m_transitions;
     std::set<state_t> m_starting_states;
     std::set<state_t> m_final_states;

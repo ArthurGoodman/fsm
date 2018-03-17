@@ -2,8 +2,6 @@
 #include <algorithm>
 #include <cstddef>
 
-#include <iostream>
-
 namespace fsm {
 
 Fsm::Fsm(
@@ -32,7 +30,7 @@ Fsm::Fsm(
 }
 
 Fsm::Fsm(
-    const std::vector<symbol_t> &alphabet,
+    const std::set<symbol_t> &alphabet,
     const std::vector<std::vector<std::vector<state_t>>> &t,
     const std::set<state_t> &s,
     const std::set<state_t> &f)
@@ -41,11 +39,6 @@ Fsm::Fsm(
     , m_starting_states(s)
     , m_final_states(f)
 {
-    for (symbol_t a : alphabet)
-    {
-        m_alphabet_counts[a]++;
-    }
-
     for (auto &row : m_transitions)
     {
         row.resize(t.size());
@@ -53,12 +46,18 @@ Fsm::Fsm(
 
     for (state_t s1 = 0; s1 < t.size(); s1++)
     {
-        for (std::size_t a = 0; a <= alphabet.size(); a++)
+        auto it = alphabet.begin();
+        for (std::size_t i = 0; i <= alphabet.size(); i++)
         {
-            for (state_t s2 : t[s1][a])
+            for (state_t s2 : t[s1][i])
             {
-                symbol_t sym = a == alphabet.size() ? '\0' : alphabet[a];
+                symbol_t sym = i == alphabet.size() ? '\0' : *it;
                 connect(s1, s2, sym);
+            }
+
+            if (i < alphabet.size())
+            {
+                ++it;
             }
         }
     }
@@ -67,21 +66,9 @@ Fsm::Fsm(
 void Fsm::connect(state_t s1, state_t s2, symbol_t a)
 {
     m_transitions[s1][s2].insert(a);
-    m_alphabet_counts[a]++;
-    if (a && m_alphabet_counts[a] == 1)
+    if (a)
     {
-        m_alphabet.emplace_back(a);
-    }
-}
-
-void Fsm::disconnect(state_t s1, state_t s2, symbol_t a)
-{
-    m_transitions[s1][s2].erase(a);
-    m_alphabet_counts[a]--;
-    if (m_alphabet_counts[a] <= 0)
-    {
-        m_alphabet_counts.erase(a);
-        m_alphabet.erase(std::remove(m_alphabet.begin(), m_alphabet.end(), a));
+        m_alphabet.insert(a);
     }
 }
 
@@ -163,7 +150,7 @@ Fsm Fsm::det() const
     {
         std::vector<std::vector<state_t>> row;
 
-        for (std::size_t a = 0; a < m_alphabet.size(); a++)
+        for (symbol_t a : m_alphabet)
         {
             std::set<state_t> ts;
 
@@ -171,7 +158,7 @@ Fsm Fsm::det() const
             {
                 for (state_t s = 0; s < m_transitions.size(); s++)
                 {
-                    if (m_transitions[i][s].find(m_alphabet[a]) !=
+                    if (m_transitions[i][s].find(a) !=
                         m_transitions[i][s].end())
                     {
                         ts.insert(closures[s].begin(), closures[s].end());
@@ -260,7 +247,6 @@ std::ostream &operator<<(std::ostream &stream, const Fsm &fsm)
 void Fsm::buildAlphabet()
 {
     m_alphabet.clear();
-    m_alphabet_counts.clear();
 
     for (state_t s1 = 0; s1 < m_transitions.size(); s1++)
     {
@@ -268,10 +254,9 @@ void Fsm::buildAlphabet()
         {
             for (symbol_t a : m_transitions[s1][s2])
             {
-                m_alphabet_counts[a]++;
-                if (a && m_alphabet_counts[a] == 1)
+                if (a)
                 {
-                    m_alphabet.emplace_back(a);
+                    m_alphabet.insert(a);
                 }
             }
         }

@@ -1,5 +1,5 @@
 #include <iostream>
-#include "fsm/fsm.hpp"
+#include "fsm/Fsm.hpp"
 
 int main()
 {
