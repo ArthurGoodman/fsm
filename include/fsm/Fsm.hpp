@@ -14,15 +14,15 @@ public: // types
     using symbol_t = char;
 
 public: // methods
-    Fsm(std::size_t states,
+    explicit Fsm(std::size_t states,
         const std::set<state_t> &s = {},
         const std::set<state_t> &f = {});
 
-    Fsm(const std::vector<std::vector<std::set<symbol_t>>> &t,
+    explicit Fsm(const std::vector<std::vector<std::set<symbol_t>>> &t,
         const std::set<state_t> &s = {},
         const std::set<state_t> &f = {});
 
-    Fsm(const std::set<symbol_t> &a,
+    explicit Fsm(const std::set<symbol_t> &a,
         const std::vector<std::vector<std::vector<state_t>>> &t,
         const std::set<state_t> &s = {},
         const std::set<state_t> &f = {});
