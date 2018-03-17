@@ -1,4 +1,4 @@
-#include "fsm/fsm.hpp"
+#include "fsm/Fsm.hpp"
 #include <algorithm>
 #include <cstddef>
 
