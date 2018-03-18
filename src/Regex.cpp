@@ -69,9 +69,8 @@ public:
 
     void print(NodePrintContext &ctx) override
     {
-        std::string char_str = (m_char == '"' ? "\\" : "");
-        char_str += m_char;
-        ctx.print("CharacterNode { \"", char_str, "\" }\n");
+        ctx.print(
+            "CharacterNode { \"", m_char == '"' ? "\\" : "", m_char, "\" }\n");
     }
 
     Fsm compile() override
@@ -95,13 +94,16 @@ public:
     {
         ctx.print("CharacterSetNode {\n");
         ctx.indent();
-        for (auto set : m_sets)
+        for (const auto &set : m_sets)
         {
-            std::string set_str;
-            set_str += set.first;
-            set_str += '-';
-            set_str += set.second;
-            ctx.print("Set { ", set_str, " }\n");
+            if (set.first != set.second)
+            {
+                ctx.print("Range { ", set.first, "-", set.second, " }\n");
+            }
+            else
+            {
+                ctx.print("Character { ", set.first, " }\n");
+            }
         }
         ctx.unindent();
         ctx.print("}\n");
@@ -142,7 +144,7 @@ public:
     {
         ctx.print("ConcatenationNode {\n");
         ctx.indent();
-        for (auto node : m_nodes)
+        for (const auto &node : m_nodes)
         {
             node->print(ctx);
         }
@@ -171,7 +173,7 @@ public:
     {
         ctx.print("GroupNode {\n");
         ctx.indent();
-        for (auto node : m_nodes)
+        for (const auto &node : m_nodes)
         {
             node->print(ctx);
         }
@@ -267,7 +269,7 @@ public: // methods
 private: // methods
     void getChar()
     {
-        static const std::string opeators("+*?.(|)");
+        static const std::string opeators("+*?.|()[]");
 
         if (m_pos >= m_pattern.size())
         {
@@ -305,14 +307,14 @@ private: // methods
 
     bool check(char c)
     {
-        return m_char == c;
+        return m_char == -c;
     }
 
     NodePtr expr()
     {
         std::vector<NodePtr> nodes;
 
-        while (!check('\0') && !check(-'|') && !check(-')'))
+        while (!check('\0') && !check('|') && !check(')'))
         {
             nodes.emplace_back(suffix());
         }
@@ -327,15 +329,15 @@ private: // methods
 
         while (true)
         {
-            if (accept(-'+'))
+            if (accept('+'))
             {
                 node.reset(new IterationNode(node, false));
             }
-            else if (accept(-'*'))
+            else if (accept('*'))
             {
                 node.reset(new IterationNode(node, true));
             }
-            else if (accept(-'?'))
+            else if (accept('?'))
             {
                 node.reset(new OptionalNode(node));
             }
@@ -352,23 +354,22 @@ private: // methods
     {
         NodePtr node = nullptr;
 
-        // if (accept(-'.'))
-        // {
-        //     node.reset(new WildcardNode);
-        // }
-        // else
-        if (accept(-'('))
+        if (accept('.'))
+        {
+            node.reset(new WildcardNode);
+        }
+        else if (accept('('))
         {
             std::vector<NodePtr> nodes;
 
-            if (!accept(-')'))
+            if (!accept(')'))
             {
                 do
                 {
                     nodes.emplace_back(expr());
-                } while (accept(-'|'));
+                } while (accept('|'));
 
-                if (!accept(-')'))
+                if (!accept(')'))
                 {
                     throw std::runtime_error("unmatched parentheses");
                 }
@@ -383,7 +384,55 @@ private: // methods
                 node.reset(new GroupNode(nodes));
             }
         }
-        else if (m_char < 0 && !check(-'|') && !check(-')'))
+        else if (accept('['))
+        {
+            std::vector<std::pair<char, char>> sets;
+
+            while (m_pos < m_pattern.size() && !check(']'))
+            {
+                if (m_char == '-' && m_pattern[m_pos - 2] != '\\')
+                {
+                    throw std::runtime_error("invalid character set");
+                }
+
+                char first = std::abs(m_char);
+                getChar();
+
+                char second;
+
+                if (m_char == '-' && m_pattern[m_pos - 2] != '\\')
+                {
+                    getChar();
+
+                    if (check(']') && m_pattern[m_pos - 2] != '\\')
+                    {
+                        throw std::runtime_error("invalid character set");
+                    }
+
+                    second = std::abs(m_char);
+                    getChar();
+                }
+                else
+                {
+                    second = first;
+                }
+
+                if (second < first)
+                {
+                    throw std::runtime_error("invalid character set");
+                }
+
+                sets.emplace_back(std::make_pair(first, second));
+            }
+
+            if (!accept(']'))
+            {
+                throw std::runtime_error("unmatched brackets");
+            }
+
+            node.reset(new CharacterSetNode(sets));
+        }
+        else if (m_char < 0 && !check('|') && !check(')'))
         {
             throw std::runtime_error(
                 "unexpected character '" + std::string(1, -m_char) + "'");
@@ -433,8 +482,10 @@ bool Regex::match(const std::string &str)
 Fsm Regex::buildFsm(const std::string &pattern)
 {
     NodePtr node = RegexParser().parse(pattern);
+
     NodePrintContext ctx(std::cout);
     node->print(ctx);
+
     return node->compile();
 }
 
