@@ -130,7 +130,6 @@ Fsm Fsm::rev() const
     return rfsm;
 }
 
-///@todo Fix bug with epsilon transitions
 Fsm Fsm::det() const
 {
     const std::vector<std::set<state_t>> &closures = epsilonClosures();
@@ -454,8 +453,8 @@ void Fsm::buildEpsilonClosures(
     {
         if (m_transitions[state][s].find('\0') != m_transitions[state][s].end())
         {
-            closures[state].insert(s);
             buildEpsilonClosures(s, closures, flags);
+            closures[state].insert(closures[s].begin(), closures[s].end());
         }
     }
 }
