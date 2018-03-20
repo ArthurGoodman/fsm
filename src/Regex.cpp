@@ -75,7 +75,11 @@ public:
 
     Fsm compile() override
     {
-        return Fsm(0);
+        Fsm fsm(2);
+        fsm.setStarting(0);
+        fsm.setFinal(1);
+        fsm.connect(0, 1, m_char);
+        return fsm;
     }
 
 private:
@@ -111,7 +115,17 @@ public:
 
     Fsm compile() override
     {
-        return Fsm(0);
+        Fsm fsm(2);
+        fsm.setStarting(0);
+        fsm.setFinal(1);
+        for (const auto &pair : m_sets)
+        {
+            for (char c = pair.first; c <= pair.second; c++)
+            {
+                fsm.connect(0, 1, c);
+            }
+        }
+        return fsm;
     }
 
 private:
@@ -154,7 +168,12 @@ public:
 
     Fsm compile() override
     {
-        return Fsm(0);
+        std::vector<Fsm> fsms;
+        for (const auto &node : m_nodes)
+        {
+            fsms.emplace_back(node->compile());
+        }
+        return Fsm::concatenation(fsms);
     }
 
 private:
@@ -183,7 +202,12 @@ public:
 
     Fsm compile() override
     {
-        return Fsm(0);
+        std::vector<Fsm> fsms;
+        for (const auto &node : m_nodes)
+        {
+            fsms.emplace_back(node->compile());
+        }
+        return Fsm::disjunction(fsms);
     }
 
 private:
@@ -193,9 +217,8 @@ private:
 class IterationNode : public Node
 {
 public:
-    explicit IterationNode(NodePtr node, bool allow_zero)
+    explicit IterationNode(NodePtr node)
         : m_node{node}
-        , m_allow_zero{allow_zero}
     {
     }
 
@@ -210,12 +233,11 @@ public:
 
     Fsm compile() override
     {
-        return Fsm(0);
+        return Fsm::iteration(m_node->compile());
     }
 
 private:
     NodePtr m_node;
-    bool m_allow_zero;
 };
 
 class OptionalNode : public Node
@@ -237,7 +259,7 @@ public:
 
     Fsm compile() override
     {
-        return Fsm(0);
+        return Fsm::option(m_node->compile());
     }
 
 private:
@@ -331,11 +353,11 @@ private: // methods
         {
             if (accept('+'))
             {
-                node.reset(new IterationNode(node, false));
+                node.reset(new IterationNode(node));
             }
             else if (accept('*'))
             {
-                node.reset(new IterationNode(node, true));
+                node.reset(new OptionalNode(NodePtr{new IterationNode(node)}));
             }
             else if (accept('?'))
             {
@@ -462,6 +484,7 @@ public: // methods
 
     bool match(const std::string &str)
     {
+        ///@todo Implement
         return false;
     }
 

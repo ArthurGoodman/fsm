@@ -1,6 +1,7 @@
 #include "fsm/Fsm.hpp"
 #include <algorithm>
 #include <cstddef>
+#include <stdexcept>
 
 namespace fsm {
 
@@ -129,6 +130,7 @@ Fsm Fsm::rev() const
     return rfsm;
 }
 
+///@todo Fix bug with epsilon transitions
 Fsm Fsm::det() const
 {
     const std::vector<std::set<state_t>> &closures = epsilonClosures();
@@ -244,6 +246,138 @@ std::ostream &operator<<(std::ostream &stream, const Fsm &fsm)
     return stream;
 }
 
+///@todo Remove unnecessary epsilon transitions
+Fsm Fsm::concatenation(const std::vector<Fsm> &fsms)
+{
+    std::size_t states_num = 2;
+
+    std::set<symbol_t> alphabet;
+
+    for (const auto &fsm : fsms)
+    {
+        fsm.ensureAtomic();
+        states_num += fsm.getTransitions().size();
+        alphabet.insert(fsm.m_alphabet.begin(), fsm.m_alphabet.end());
+    }
+
+    Fsm res(states_num);
+    res.m_alphabet = alphabet;
+
+    std::size_t global_index = 1;
+
+    state_t global_start = 0;
+    state_t global_end = states_num - 1;
+
+    res.setStarting(global_start);
+    res.setFinal(global_end);
+
+    state_t prev_end = global_start;
+
+    for (const auto &fsm : fsms)
+    {
+        auto transitions = fsm.getTransitions();
+
+        for (state_t i = 0; i < transitions.size(); i++)
+        {
+            for (state_t j = 0; j < transitions.size(); j++)
+            {
+                res.m_transitions[global_index + i][global_index + j] =
+                    transitions[i][j];
+            }
+        }
+
+        state_t start = *fsm.getStartingStates().begin();
+        state_t end = *fsm.getFinalStates().begin();
+
+        res.connect(prev_end, start + global_index, '\0');
+        prev_end = end + global_index;
+
+        global_index += transitions.size();
+    }
+
+    res.connect(prev_end, global_end, '\0');
+
+    return res;
+}
+
+///@todo Boilerplate
+Fsm Fsm::disjunction(const std::vector<Fsm> &fsms)
+{
+    std::size_t states_num = 2;
+
+    std::set<symbol_t> alphabet;
+
+    for (const auto &fsm : fsms)
+    {
+        fsm.ensureAtomic();
+        states_num += fsm.getTransitions().size();
+        alphabet.insert(fsm.m_alphabet.begin(), fsm.m_alphabet.end());
+    }
+
+    Fsm res(states_num);
+    res.m_alphabet = alphabet;
+
+    std::size_t global_index = 1;
+
+    state_t global_start = 0;
+    state_t global_end = states_num - 1;
+
+    res.setStarting(global_start);
+    res.setFinal(global_end);
+
+    for (const auto &fsm : fsms)
+    {
+        auto transitions = fsm.getTransitions();
+
+        for (state_t i = 0; i < transitions.size(); i++)
+        {
+            for (state_t j = 0; j < transitions.size(); j++)
+            {
+                res.m_transitions[global_index + i][global_index + j] =
+                    transitions[i][j];
+            }
+        }
+
+        state_t start = *fsm.getStartingStates().begin();
+        state_t end = *fsm.getFinalStates().begin();
+
+        res.connect(global_start, start + global_index, '\0');
+        res.connect(end + global_index, global_end, '\0');
+
+        global_index += transitions.size();
+    }
+
+    return res;
+}
+
+Fsm Fsm::option(const Fsm &fsm)
+{
+    fsm.ensureAtomic();
+
+    state_t start = *fsm.getStartingStates().begin();
+    state_t end = *fsm.getFinalStates().begin();
+
+    Fsm res = fsm;
+
+    res.connect(start, end, '\0');
+
+    return res;
+}
+
+Fsm Fsm::iteration(const Fsm &fsm)
+{
+    fsm.ensureAtomic();
+
+    state_t start = *fsm.getStartingStates().begin();
+    state_t end = *fsm.getFinalStates().begin();
+
+    Fsm res = fsm;
+
+    res.connect(end, start, '\0');
+
+    return res;
+}
+
 void Fsm::buildAlphabet()
 {
     m_alphabet.clear();
@@ -323,6 +457,15 @@ void Fsm::buildEpsilonClosures(
             closures[state].insert(s);
             buildEpsilonClosures(s, closures, flags);
         }
+    }
+}
+
+///@todo Refactor this
+void Fsm::ensureAtomic() const
+{
+    if (getStartingStates().size() != 1 && getFinalStates().size() != 1)
+    {
+        throw std::runtime_error("FSM is not atomic");
     }
 }
 
