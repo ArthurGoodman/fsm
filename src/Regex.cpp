@@ -504,12 +504,7 @@ bool Regex::match(const std::string &str)
 
 Fsm Regex::buildFsm(const std::string &pattern)
 {
-    NodePtr node = RegexParser().parse(pattern);
-
-    NodePrintContext ctx(std::cout);
-    node->print(ctx);
-
-    return node->compile();
+    return RegexParser().parse(pattern)->compile();
 }
 
 #undef FOREACH_TEMPLATE_PACK
